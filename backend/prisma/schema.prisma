@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  createdAt    DateTime      @default(now())
+  reservations Reservation[]
+  orders       Order[]
+
+  @@index([email])
+}
+
+model Product {
+  id            String         @id @default(uuid())
+  name          String
+  description   String
+  price         Float
+  stock         Int
+  createdAt     DateTime       @default(now())
+  reservations  Reservation[]
+  inventoryLogs InventoryLog[]
+
+  @@index([name])
+}
+
+enum ReservationStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+model Reservation {
+  id            String            @id @default(uuid())
+  userId        String
+  productId     String
+  quantity      Int
+  status        ReservationStatus @default(PENDING)
+  expiresAt     DateTime
+  createdAt     DateTime          @default(now())
+
+  user          User              @relation(fields: [userId], references: [id])
+  product       Product           @relation(fields: [productId], references: [id])
+  order         Order?
+  inventoryLogs InventoryLog[]
+
+  @@index([userId])
+  @@index([productId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  userId        String
+  reservationId String      @unique
+  totalAmount   Float
+  createdAt     DateTime    @default(now())
+
+  user          User        @relation(fields: [userId], references: [id])
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+
+  @@index([userId])
+}
+
+enum InventoryChangeReason {
+  RESERVED
+  RELEASED
+  SOLD
+  EXPIRED
+}
+
+model InventoryLog {
+  id            String                @id @default(uuid())
+  productId     String
+  reservationId String?
+  changeAmount  Int
+  reason        InventoryChangeReason
+  createdAt     DateTime              @default(now())
+
+  product       Product               @relation(fields: [productId], references: [id])
+  reservation   Reservation?          @relation(fields: [reservationId], references: [id])
+
+  @@index([productId])
+  @@index([reservationId])
+}
