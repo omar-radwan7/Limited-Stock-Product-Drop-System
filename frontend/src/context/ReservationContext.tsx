@@ -17,6 +17,7 @@ export type ReservationState =
 interface ReservationContextType {
   state: ReservationState;
   reservationId: string | null;
+  productId: string | null;
   expiresAt: string | null;
   orderId: string | null;
   errorMessage: string | null;
@@ -32,6 +33,7 @@ const ReservationContext = createContext<ReservationContextType | undefined>(und
 export const ReservationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<ReservationState>('IDLE');
   const [reservationId, setReservationId] = useState<string | null>(null);
+  const [productId, setProductId] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -41,9 +43,10 @@ export const ReservationProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     const resumeSession = async () => {
       try {
-        const active = await reservationApi.fetchActive();
+        const active = (await reservationApi.fetchActive()) as any;
         if (active) {
           setReservationId(active.reservationId);
+          setProductId(active.productId);
           setExpiresAt(active.expiresAt);
           setState('RESERVED');
         }
@@ -54,14 +57,15 @@ export const ReservationProvider: React.FC<{ children: React.ReactNode }> = ({ c
     void resumeSession();
   }, []);
 
-  const reserve = useCallback(async (productId: string, quantity: number) => {
+  const reserve = useCallback(async (pId: string, quantity: number) => {
     setState('RESERVING');
     setApiError(null);
     setErrorMessage(null);
 
     try {
-      const data = await reservationApi.createReservation(productId, quantity);
+      const data = await reservationApi.createReservation(pId, quantity);
       setReservationId(data.reservationId);
+      setProductId(pId);
       setExpiresAt(data.expiresAt);
       setState('RESERVED');
     } catch (err: unknown) {
@@ -106,6 +110,7 @@ export const ReservationProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const reset = useCallback(() => {
     setState('IDLE');
     setReservationId(null);
+    setProductId(null);
     setExpiresAt(null);
     setOrderId(null);
     setErrorMessage(null);
@@ -114,7 +119,7 @@ export const ReservationProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   return (
     <ReservationContext.Provider value={{
-      state, reservationId, expiresAt, orderId, errorMessage, apiError, reserve, checkout, cancel, reset
+      state, reservationId, productId, expiresAt, orderId, errorMessage, apiError, reserve, checkout, cancel, reset
     }}>
       {children}
     </ReservationContext.Provider>

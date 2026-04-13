@@ -24,6 +24,9 @@ export const getProducts = async (
       prisma.product.count(),
     ]);
 
+    // Debugging: Verify imageUrls are present
+    console.log('SYNC_DEBUG: Sending products with images:', products.map(p => ({ n: p.name, img: p.imageUrl })));
+
     res.json({
       data: products,
       pagination: {

@@ -25,6 +25,7 @@ model Product {
   description   String
   price         Float
   stock         Int
+  imageUrl      String?
   createdAt     DateTime       @default(now())
   reservations  Reservation[]
   inventoryLogs InventoryLog[]

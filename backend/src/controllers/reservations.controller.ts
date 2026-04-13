@@ -282,6 +282,7 @@ export const getActiveReservation = async (
 
     res.status(200).json({
       reservationId: reservation.id,
+      productId: reservation.productId,
       expiresAt: reservation.expiresAt,
     });
   } catch (err: unknown) {
