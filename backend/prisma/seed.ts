@@ -9,7 +9,17 @@ const prisma = new PrismaClient({ adapter });
 
 async function seed() {
   console.log('Seeding high-end tech inventory with images...');
-  
+
+  // Create the demo user required for the portfolio auth bypass
+  await prisma.user.upsert({
+    where: { id: 'demo-user-123' },
+    update: {},
+    create: {
+      id: 'demo-user-123',
+      email: 'demo@instock.dev',
+    },
+  });
+
   const products = [
     {
       id: '550e8400-e29b-41d4-a716-446655440002',
