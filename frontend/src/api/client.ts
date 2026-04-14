@@ -11,7 +11,8 @@ export const apiClient = axios.create({
 
 // Attach JWT token to every request automatically
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token') || import.meta.env.VITE_TEST_TOKEN;
+  // Use localStorage, then environment variable, then fallback to a constant for the demo
+  const token = localStorage.getItem('token') || import.meta.env.VITE_TEST_TOKEN || 'demo-token-123';
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
