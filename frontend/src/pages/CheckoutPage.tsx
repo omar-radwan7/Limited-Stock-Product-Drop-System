@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useReservationContext } from '../context/ReservationContext';
 import { useCountdown } from '../hooks/useCountdown';
 import { useProduct } from '../hooks/useProduct';
-import { ShieldCheck, ArrowLeft } from 'lucide-react';
 
 const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();

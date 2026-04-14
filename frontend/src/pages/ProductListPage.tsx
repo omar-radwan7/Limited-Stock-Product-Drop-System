@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { productApi } from '../api/productApi';
 import type { Product } from '../types';
-import { Zap, AlertCircle } from 'lucide-react';
 
 const ProductListPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
