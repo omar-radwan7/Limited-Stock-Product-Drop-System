@@ -1,84 +1,89 @@
-# Technical Hardware Drop System
+# Limited-Stock Product Drop System
 
-A high-fidelity, real-time inventory management and reservation system built for high-demand product drops. Designed with a focus on data integrity, concurrency handling, and a premium industrial user experience.
+A real-time inventory reservation system built for high-demand product drops with atomic concurrency guarantees.
 
-## 🚀 Key Features
-
-- **Multi-Item Hardware Boutique**: A curated collection of technical assets with real-time stock tracking.
-- **Smart Reservation Engine**: Implements a 5-minute checkout window with automatic stock release on expiry or cancellation.
-- **Atomic Concurrency**: Backend powered by PostgreSQL & Prisma using `Serializable` transaction isolation to prevent race conditions and overselling during high-traffic bursts.
-- **High-Fidelity Interface**: A minimalist industrial aesthetic using a custom "Cyber-Ink" palette, optimized for professional technical environments.
-- **Session Persistence**: Automatic reservation resumption via secure local tokens, allowing users to refresh pages without losing their spot.
-
-## 🐳 Quick Start (Docker — Recommended)
-
-> **Requirement**: [Docker Desktop](https://www.docker.com/products/docker-desktop/) must be installed.
-
-```bash
-# Clone the repository
-git clone [repository-url]
-cd Limited-Stock-Product-Drop-System
-
-# Start everything with one command
-docker-compose up --build
-```
-
-> ⏳ Wait ~30 seconds for the database to initialize, then open:
->
-> 🌐 **App → http://localhost:5173**
->
-> 🔌 **API → http://localhost:3001**
-
-The database will be automatically created, migrated, and seeded with tech inventory. 🎉
+**🎥 Loom Walkthrough:** *(link here)*
+**🏗 Architecture Diagram:** *(link here)*
+**🌐 Hosted Demo:** *(https://pxxl.app/ link here)*
 
 ---
 
-## 🛠️ Manual Setup (Without Docker)
+## Quick Start
 
-### Prerequisites
-- Node.js (v18+)
-- PostgreSQL running at `localhost:5432`
+> **Requires:** [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
-### Backend
 ```bash
-cd backend
-npm install
-npx prisma migrate dev
-npx prisma db seed
-npm run dev
+# First run (wipes DB volume so seed runs clean)
+docker-compose down -v && docker-compose up --build
 ```
 
-### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
+Then open → **http://localhost:5173**
+
+> ⏳ Wait ~30 seconds for the database to initialize on first boot.
 
 ---
 
-## 🧪 Running Tests
+## How Race Conditions Were Handled
 
-```bash
-# Backend (Jest — 12 tests)
-cd backend && npm test
+Every reservation runs inside a **PostgreSQL `Serializable` transaction**. When two users simultaneously attempt to grab the last unit, only one transaction commits — the other receives a serialization failure and is rejected cleanly. No overselling is possible.
 
-# Frontend (Vitest — 12 tests)
-cd frontend && npm test -- --run
-```
+Stock is also decremented **inside** the transaction (not after), so there is no window between "check" and "update."
 
 ---
 
-## 🛠️ Technical Stack
+## Schema Decisions
 
-| Layer | Technology |
+- **`User` → `Reservation` → `Order` chain** enforces that a product can only be purchased after a valid reservation, preventing direct checkout bypasses.
+- **`ReservationStatus` enum** (`PENDING`, `COMPLETED`, `EXPIRED`, `CANCELLED`) makes reservation lifecycle explicit and queryable by index.
+- **`expiresAt` on Reservation** enables a background worker to auto-release stock every 60 seconds, keeping inventory accurate without user intervention.
+- **`InventoryLog`** provides a full audit trail of every stock change and its reason.
+
+---
+
+## Trade-offs
+
+| Decision | Trade-off |
 |---|---|
-| Frontend | React 18, TypeScript, Vite |
-| Backend | Node.js, Express, TypeScript |
-| Database | PostgreSQL, Prisma ORM |
-| Validation | Zod |
-| Containerization | Docker, Docker Compose |
+| PostgreSQL Serializable isolation | Slightly higher lock contention vs. optimistic locking, but simpler and safer for this scale |
+| Monorepo (backend + frontend) | Easier to develop and demo, harder to scale independently |
+| `nodemon` in Docker | Convenient for reviewers but not suitable for production |
+| Demo token bypass instead of full JWT auth | Eliminates reviewer friction, but would be replaced by proper auth in production |
 
 ---
 
-*Created by Omar Radwan*
+## What Would Break at 10k Concurrent Users
+
+- **Serializable transactions** would cause high lock contention and increased transaction rollbacks, degrading reservation throughput significantly.
+- The **single Node.js process** would become a CPU bottleneck.
+- The **expiry worker** running in the same process would lag under load.
+- A single Postgres instance would hit connection pool limits.
+
+---
+
+## How to Scale It
+
+1. **Horizontal scaling** — Run multiple backend instances behind a load balancer (e.g., AWS ALB).
+2. **Redis for reservations** — Move the reservation lock to Redis with atomic `SETNX` for sub-millisecond contention handling at high concurrency.
+3. **Queue-based checkout** — Use a job queue (BullMQ/SQS) so checkout processing is decoupled from the HTTP request.
+4. **Read replicas** — Route product listing queries to Postgres read replicas.
+5. **CDN for static assets** — Serve frontend via CloudFront/Vercel Edge.
+
+---
+
+## Running Tests
+
+```bash
+cd backend && npm test      # 12 backend tests (Jest)
+cd frontend && npm test -- --run  # 12 frontend tests (Vitest)
+```
+
+---
+
+## Stack
+
+| Layer | Tech |
+|---|---|
+| Frontend | React 18, TypeScript, Vite, nginx |
+| Backend | Node.js, Express, TypeScript |
+| Database | PostgreSQL 16, Prisma ORM |
+| Containerization | Docker, Docker Compose |
