@@ -6,50 +6,77 @@ A high-fidelity, real-time inventory management and reservation system built for
 
 - **Multi-Item Hardware Boutique**: A curated collection of technical assets with real-time stock tracking.
 - **Smart Reservation Engine**: Implements a 5-minute checkout window with automatic stock release on expiry or cancellation.
-- **Atomic Concurrency**: Backend powered by PostgreSQL & Prisma using `Serializable` transaction isolation levels to prevent race conditions and overselling during high-traffic bursts.
+- **Atomic Concurrency**: Backend powered by PostgreSQL & Prisma using `Serializable` transaction isolation to prevent race conditions and overselling during high-traffic bursts.
 - **High-Fidelity Interface**: A minimalist industrial aesthetic using a custom "Cyber-Ink" palette, optimized for professional technical environments.
 - **Session Persistence**: Automatic reservation resumption via secure local tokens, allowing users to refresh pages without losing their spot.
 
-## 🛠️ Technical Stack
+## 🐳 Quick Start (Docker — Recommended)
 
-- **Frontend**: React 18, TypeScript, Vite, React Router, CSS Variables.
-- **Backend**: Node.js, Express, TypeScript, Prisma ORM.
-- **Database**: PostgreSQL with serializable transaction support.
-- **Validation**: Zod schema validation for all API inputs.
+> **Requirement**: [Docker Desktop](https://www.docker.com/products/docker-desktop/) must be installed.
 
-## 📦 Getting Started
-
-### 1. Prerequisites
-- Node.js (v18+)
-- PostgreSQL instance
-
-### 2. Installation
 ```bash
 # Clone the repository
 git clone [repository-url]
+cd Limited-Stock-Product-Drop-System
 
-# Install dependencies (Root)
-npm install
+# Start everything with one command
+docker-compose up --build
+```
 
-# Setup Database (Backend)
+Then open:
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:3001
+
+The database will be automatically created, migrated, and seeded with tech inventory. 🎉
+
+---
+
+## 🛠️ Manual Setup (Without Docker)
+
+### Prerequisites
+- Node.js (v18+)
+- PostgreSQL running at `localhost:5432`
+
+### Backend
+```bash
 cd backend
+npm install
 npx prisma migrate dev
 npx prisma db seed
-
-# Launch System
-# Terminal 1: Backend
-npm run dev
-
-# Terminal 2: Frontend
-cd ../frontend
 npm run dev
 ```
 
-## 🧪 Testing
-The system includes comprehensive tests for:
-- **Concurrency**: Simulation of simultaneous users competing for the same stock unit.
-- **Expiry Logic**: Verification of automatic inventory release.
-- **UI State**: High-precision rendering of 'Sold Out' and 'Critical Stock' states.
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
 ---
+
+## 🧪 Running Tests
+
+```bash
+# Backend (Jest — 12 tests)
+cd backend && npm test
+
+# Frontend (Vitest — 12 tests)
+cd frontend && npm test -- --run
+```
+
+---
+
+## 🛠️ Technical Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, TypeScript, Vite |
+| Backend | Node.js, Express, TypeScript |
+| Database | PostgreSQL, Prisma ORM |
+| Validation | Zod |
+| Containerization | Docker, Docker Compose |
+
+---
+
 *Created by Omar Radwan*
