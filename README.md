@@ -23,9 +23,11 @@ cd Limited-Stock-Product-Drop-System
 docker-compose up --build
 ```
 
-Then open:
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3001
+> ⏳ Wait ~30 seconds for the database to initialize, then open:
+>
+> 🌐 **App → http://localhost:5173**
+>
+> 🔌 **API → http://localhost:3001**
 
 The database will be automatically created, migrated, and seeded with tech inventory. 🎉
 
