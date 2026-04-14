@@ -33,7 +33,7 @@ services:
       NODE_ENV: development
       PORT: 3001
       JWT_SECRET: dev_secret_key
-      VITE_TEST_TOKEN: test_token_123
+      VITE_TEST_TOKEN: demo-token-123
     ports:
       - '3001:3001'
 

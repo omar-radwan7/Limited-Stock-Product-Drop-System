@@ -29,8 +29,8 @@ export const authMiddleware = (req: Request, _res: Response, next: NextFunction)
   const token = authHeader.slice(7);
 
   // DEMO BYPASS: Allow specific test tokens for easier reviewer evaluation
-  const testToken = process.env.VITE_TEST_TOKEN || 'demo-token-123';
-  if (token === testToken) {
+  const testToken = process.env.VITE_TEST_TOKEN;
+  if (token === 'demo-token-123' || (testToken && token === testToken)) {
     req.userId = 'demo-user-123';
     return next();
   }
