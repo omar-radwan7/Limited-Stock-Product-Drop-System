@@ -13,7 +13,7 @@ import { errorHandler } from './middleware/error.middleware';
 import { initExpiryWorker } from './services/expiry.worker';
 
 const app = express();
-const port = process.env.PORT ?? 3001;
+const port = 3001;
 
 // ── Global Middleware ─────────────────────────────────────────────────────────
 app.use(
