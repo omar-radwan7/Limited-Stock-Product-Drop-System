@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { Request, Response, NextFunction } from 'express';
 import { ProductsQuerySchema } from '../validators/reservations.validator';
-import prisma from '../lib/prisma';
+import prisma, { dbConnected } from '../lib/prisma';
 import { AppError } from '../middleware/error.middleware';
 
 export const getProducts = async (
@@ -66,11 +66,27 @@ export const getProductById = async (
   }
 };
 
-export const getHealth = (_req: Request, res: Response): void => {
-  res.json({
-    status: 'ok',
+export const getHealth = async (_req: Request, res: Response): Promise<void> => {
+  // Basic health check - always returns ok for the server itself
+  // Database status is reported separately
+  let dbStatus = 'unknown';
+
+  if (dbConnected) {
+    dbStatus = 'connected';
+  } else {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      dbStatus = 'connected';
+    } catch {
+      dbStatus = 'disconnected';
+    }
+  }
+
+  res.status(dbStatus === 'connected' ? 200 : 503).json({
+    status: dbStatus === 'connected' ? 'ok' : 'degraded',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    database: dbStatus,
   });
 };
 

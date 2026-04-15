@@ -1,22 +1,17 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.dbConnected = void 0;
 const client_1 = require("@prisma/client");
-const adapter_pg_1 = require("@prisma/adapter-pg");
-const pg_1 = require("pg");
-const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
-const pool = new pg_1.Pool({
-    connectionString: process.env.DATABASE_URL,
-});
-const adapter = new adapter_pg_1.PrismaPg(pool);
-const prisma = new client_1.PrismaClient({ adapter });
-// Verify DB connection on startup — fail fast, don't silently continue
+// Simple PrismaClient initialization - works in most environments
+const prisma = new client_1.PrismaClient();
+// Async DB connection check - don't block server startup
+// This allows health checks to pass even if DB is temporarily unavailable
+let dbConnected = false;
+exports.dbConnected = dbConnected;
 prisma
     .$connect()
     .then(() => {
+    exports.dbConnected = dbConnected = true;
     console.log(JSON.stringify({
         timestamp: new Date().toISOString(),
         event: 'DB_CONNECTED',
@@ -29,8 +24,9 @@ prisma
         timestamp: new Date().toISOString(),
         event: 'DB_CONNECTION_FAILED',
         error: message,
+        hint: 'Server will continue running. DB operations will fail until connection is restored.',
     }));
-    process.exit(1);
+    // Don't exit - let the server run so health checks can pass
 });
 exports.default = prisma;
 //# sourceMappingURL=prisma.js.map

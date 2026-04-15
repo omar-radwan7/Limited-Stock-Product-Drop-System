@@ -1,6 +1,15 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Log startup immediately
+console.log(JSON.stringify({
+  timestamp: new Date().toISOString(),
+  event: 'SERVER_INIT',
+  message: 'Starting server initialization...',
+  nodeEnv: process.env.NODE_ENV ?? 'development',
+  port: process.env.PORT ?? '3001',
+}));
+
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
@@ -13,7 +22,13 @@ import { errorHandler } from './middleware/error.middleware';
 import { initExpiryWorker } from './services/expiry.worker';
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
+
+console.log(JSON.stringify({
+  timestamp: new Date().toISOString(),
+  event: 'EXPRESS_INIT',
+  message: 'Express app created, setting up middleware...',
+}));
 
 // ── Global Middleware ─────────────────────────────────────────────────────────
 app.use(
@@ -47,8 +62,33 @@ app.use('/api', reservationsRouter); // /api/reserve, /api/checkout
 // ── Centralized Error Handler ─────────────────────────────────────────────────
 app.use(errorHandler);
 
+console.log(JSON.stringify({
+  timestamp: new Date().toISOString(),
+  event: 'ROUTES_CONFIGURED',
+  message: 'Routes and middleware configured',
+}));
+
 // ── Background Workers ────────────────────────────────────────────────────────
 initExpiryWorker();
+
+// ── Graceful Shutdown ─────────────────────────────────────────────────────────
+process.on('SIGTERM', () => {
+  console.log(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    event: 'SIGTERM_RECEIVED',
+    message: 'Shutting down gracefully...',
+  }));
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    event: 'SIGINT_RECEIVED',
+    message: 'Shutting down gracefully...',
+  }));
+  process.exit(0);
+});
 
 app.listen(Number(port), '0.0.0.0', () => {
   console.log(
