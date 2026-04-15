@@ -7,7 +7,8 @@
     "start": "node dist/src/index.js",
     "dev": "nodemon src/index.ts",
     "test": "jest",
-    "build": "npx prisma generate && tsc"
+    "build": "npx prisma generate && tsc",
+    "postinstall": "npx prisma generate && tsc"
   },
   "keywords": [],
   "author": "",
