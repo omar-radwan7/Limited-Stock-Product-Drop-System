@@ -16,8 +16,8 @@
     "resolveJsonModule": true,
     "declaration": true,
     "sourceMap": true,
-    "types": ["jest", "node"]
+    "types": ["node"]
   },
-  "include": ["src/**/*", "*.ts"],
+  "include": ["src/**/*", "*.ts", "prisma/**/*"],
   "exclude": ["node_modules", "dist"]
 }
