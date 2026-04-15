@@ -1,41 +1,35 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
 
 // --------------------------------------------------------------------------
-// Module mocks — must match the actual import paths used in DropPage's hooks
+// Module mocks — must match the actual import paths used in DropPage
 // --------------------------------------------------------------------------
 vi.mock('../hooks/useProduct', () => ({
   useProduct: vi.fn(),
 }));
 
-vi.mock('../hooks/useReservation', () => ({
-  useReservation: vi.fn(),
-}));
-
-vi.mock('../hooks/useCountdown', () => ({
-  useCountdown: vi.fn(() => ({ formattedTime: '05:00', isExpired: false, secondsLeft: 300 })),
+vi.mock('../context/ReservationContext', () => ({
+  useReservationContext: vi.fn(),
 }));
 
 import DropPage from '../pages/DropPage';
 import { useProduct } from '../hooks/useProduct';
-import { useReservation } from '../hooks/useReservation';
+import { useReservationContext } from '../context/ReservationContext';
 
-// --------------------------------------------------------------------------
-// Helper: set up hook return values
-// --------------------------------------------------------------------------
 const mockUseProduct = useProduct as ReturnType<typeof vi.fn>;
-const mockUseReservation = useReservation as ReturnType<typeof vi.fn>;
+const mockUseReservationContext = useReservationContext as ReturnType<typeof vi.fn>;
 
 const defaultReservationHook = {
   state: 'IDLE',
-  expiresAt: null,
-  orderId: null,
   errorMessage: null,
-  apiError: null,
   reserve: vi.fn(),
-  checkout: vi.fn(),
   reset: vi.fn(),
+};
+
+const renderWithRouter = (ui: React.ReactElement) => {
+  return render(ui, { wrapper: BrowserRouter });
 };
 
 describe('DropPage', () => {
@@ -45,9 +39,9 @@ describe('DropPage', () => {
 
   it('shows loading spinner while product is fetching', () => {
     mockUseProduct.mockReturnValue({ product: null, loading: true, error: null, refetch: vi.fn() });
-    mockUseReservation.mockReturnValue(defaultReservationHook);
+    mockUseReservationContext.mockReturnValue(defaultReservationHook);
 
-    render(<DropPage productId="prod-001" />);
+    renderWithRouter(<DropPage productId="prod-001" />);
 
     expect(screen.getByRole('status')).toBeDefined();
     expect(screen.getByText('INITIALIZING_DROP')).toBeDefined();
@@ -55,108 +49,81 @@ describe('DropPage', () => {
 
   it('shows product name and price when loaded', () => {
     mockUseProduct.mockReturnValue({
-      product: { id: 'prod-001', name: 'Air Drop Sneaker', description: 'Rare', price: 199, stock: 5, createdAt: '' },
+      product: { id: 'prod-001', name: 'RTX 4090 FE', description: 'Ultimate GPU', price: 1599, stock: 5 },
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
-    mockUseReservation.mockReturnValue(defaultReservationHook);
+    mockUseReservationContext.mockReturnValue(defaultReservationHook);
 
-    render(<DropPage productId="prod-001" />);
+    renderWithRouter(<DropPage productId="prod-001" />);
 
-    expect(screen.getByText('Air Drop Sneaker')).toBeDefined();
-    expect(screen.getByText('USD 199.00')).toBeDefined();
+    expect(screen.getByText('RTX 4090 FE')).toBeDefined();
+    expect(screen.getByText('$1599.00')).toBeDefined();
   });
 
-  it('disables Reserve button and shows "SOLD_OUT" when stock is 0', () => {
+  it('shows STOCK_ARCHIVED when stock is 0', () => {
     mockUseProduct.mockReturnValue({
-      product: { id: 'prod-001', name: 'Air Drop Sneaker', description: 'Rare', price: 199, stock: 0, createdAt: '' },
+      product: { id: 'prod-001', name: 'RTX 4090 FE', description: 'Ultimate GPU', price: 1599, stock: 0 },
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
-    mockUseReservation.mockReturnValue(defaultReservationHook);
+    mockUseReservationContext.mockReturnValue(defaultReservationHook);
 
-    render(<DropPage productId="prod-001" />);
+    renderWithRouter(<DropPage productId="prod-001" />);
 
-    const reserveBtn = screen.getByRole('button', { name: /sold_out/i }) as HTMLButtonElement;
-    expect(reserveBtn.disabled).toBe(true);
+    expect(screen.getByText('STOCK_ARCHIVED')).toBeDefined();
   });
 
-  it('calls reserve() when RESERVE_UNIT button is clicked', () => {
+  it('calls reserve() when Reserve Now button is clicked', () => {
     const mockReserve = vi.fn();
     mockUseProduct.mockReturnValue({
-      product: { id: 'prod-001', name: 'Air Drop Sneaker', description: 'Rare', price: 199, stock: 5, createdAt: '' },
+      product: { id: 'prod-001', name: 'RTX 4090 FE', description: 'Ultimate GPU', price: 1599, stock: 5 },
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
-    mockUseReservation.mockReturnValue({ ...defaultReservationHook, reserve: mockReserve });
+    mockUseReservationContext.mockReturnValue({ ...defaultReservationHook, reserve: mockReserve });
 
-    render(<DropPage productId="prod-001" />);
+    renderWithRouter(<DropPage productId="prod-001" />);
 
-    fireEvent.click(screen.getByText(/RESERVE_UNIT/i));
+    fireEvent.click(screen.getByText(/Reserve Now/i));
 
     expect(mockReserve).toHaveBeenCalledWith('prod-001', 1);
   });
 
-  it('shows error panel on ERROR_STOCK state', () => {
+  it('shows error card on Stock Unavailable state', () => {
     mockUseProduct.mockReturnValue({
-      product: { id: 'prod-001', name: 'Air Drop Sneaker', description: 'Rare', price: 199, stock: 0, createdAt: '' },
+      product: { id: 'prod-001', name: 'RTX 4090 FE', description: 'Ultimate GPU', price: 1599, stock: 1 },
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
-    mockUseReservation.mockReturnValue({
+    mockUseReservationContext.mockReturnValue({
       ...defaultReservationHook,
       state: 'ERROR_STOCK',
-      apiError: { error: 'Insufficient stock available', code: 'INSUFFICIENT_STOCK', statusCode: 409 },
-      errorMessage: 'Insufficient stock available',
     });
 
-    render(<DropPage productId="prod-001" />);
+    renderWithRouter(<DropPage productId="prod-001" />);
 
-    expect(screen.getByText('TRANSACTION_ERROR')).toBeDefined();
+    expect(screen.getByText('Stock Unavailable')).toBeDefined();
   });
 
-  it('shows countdown and checkout button in RESERVED state', () => {
+  it('shows product offline on error state', () => {
+    const mockRefetch = vi.fn();
     mockUseProduct.mockReturnValue({
-      product: { id: 'prod-001', name: 'Air Drop Sneaker', description: 'Rare', price: 199, stock: 4, createdAt: '' },
+      product: null,
       loading: false,
-      error: null,
-      refetch: vi.fn(),
+      error: 'API Error',
+      refetch: mockRefetch,
     });
-    mockUseReservation.mockReturnValue({
-      ...defaultReservationHook,
-      state: 'RESERVED',
-      expiresAt: new Date(Date.now() + 300_000).toISOString(),
-    });
+    mockUseReservationContext.mockReturnValue(defaultReservationHook);
 
-    render(<DropPage productId="prod-001" />);
+    renderWithRouter(<DropPage productId="prod-001" />);
 
-    expect(screen.getByText('COMPLETE_PURCHASE')).toBeDefined();
-    expect(screen.getByText('05:00')).toBeDefined();
-  });
-
-  it('shows error panel with retry button on ERROR_NETWORK state', () => {
-    const mockReserve = vi.fn();
-    mockUseProduct.mockReturnValue({
-      product: { id: 'prod-001', name: 'Air Drop Sneaker', description: 'Rare', price: 199, stock: 5, createdAt: '' },
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-    mockUseReservation.mockReturnValue({
-      ...defaultReservationHook,
-      state: 'ERROR_NETWORK',
-      errorMessage: 'Network error',
-      reserve: mockReserve,
-    });
-
-    render(<DropPage productId="prod-001" />);
-
-    expect(screen.getByText('CONNECTION_LOST')).toBeDefined();
-    fireEvent.click(screen.getByText('RETRY_TRANSACTION'));
-    expect(mockReserve).toHaveBeenCalled();
+    expect(screen.getByText('PRODUCT_OFFLINE')).toBeDefined();
+    fireEvent.click(screen.getByText('RECONNECT'));
+    expect(mockRefetch).toHaveBeenCalled();
   });
 });

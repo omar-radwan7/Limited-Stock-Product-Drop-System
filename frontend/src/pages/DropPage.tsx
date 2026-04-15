@@ -15,7 +15,6 @@ const DropPage: React.FC<DropPageProps> = ({ productId }) => {
     state,
     errorMessage,
     reserve,
-    reset,
   } = useReservationContext();
 
   // Redirect to checkout if already reserved
