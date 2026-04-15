@@ -36,6 +36,7 @@ const globalLimiter = rateLimit({
 app.use(globalLimiter);
 
 // ── System Routes (no auth required) ─────────────────────────────────────────
+app.get('/', (_req, res) => res.json({ status: 'ok', service: 'Limited Stock Drop API' }));
 app.get('/health', getHealth);
 app.get('/metrics', getMetrics);
 
@@ -49,7 +50,7 @@ app.use(errorHandler);
 // ── Background Workers ────────────────────────────────────────────────────────
 initExpiryWorker();
 
-app.listen(port, () => {
+app.listen(Number(port), '0.0.0.0', () => {
   console.log(
     JSON.stringify({
       timestamp: new Date().toISOString(),
